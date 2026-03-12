@@ -24,12 +24,19 @@ import {
 } from "firebase/database";
 import { database } from "../firebase";
 import { logout } from "../authService";
-import { Transaction, TransactionType } from "../types";
+import {
+  Transaction,
+  TransactionType,
+  TransactionCategory,
+  ExpenseCategory,
+  IncomeCategory,
+} from "../types";
 import { User } from "firebase/auth";
 
 interface Props {
   user: User;
 }
+
 type AlertButton = {
   text: string;
   style?: "default" | "cancel" | "destructive";
@@ -50,18 +57,20 @@ const formatDate = (dateStr: string) => {
 export const showAlert = (
   title: string,
   message: string,
-  buttons?: AlertButton[],
+  buttons?: AlertButton[]
 ) => {
   if (Platform.OS === "web") {
     if (buttons && buttons.length > 1) {
       const ok = window.confirm(`${title}\n${message}`);
       if (ok) {
-        buttons[1]?.onPress?.();
+        // confirm: 确认键对应 buttons[1]（破坏性操作）
+        buttons.find((b) => b.style === "destructive")?.onPress?.();
       } else {
-        buttons[0]?.onPress?.();
+        buttons.find((b) => b.style === "cancel")?.onPress?.();
       }
     } else {
-      alert(`${title}\n${message}`);
+      window.alert(`${title}\n${message}`);
+      buttons?.[0]?.onPress?.();
     }
   } else {
     Alert.alert(title, message, buttons);
@@ -75,12 +84,27 @@ const formatAmount = (amount: number) =>
     maximumFractionDigits: 2,
   });
 
+// 分类配置
+const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  "餐饮", "交通", "购物", "娱乐", "医疗", "居家", "教育", "其他",
+];
+const INCOME_CATEGORIES: IncomeCategory[] = [
+  "工资", "奖金", "兼职", "理财", "其他",
+];
+
+const CATEGORY_ICONS: Record<string, string> = {
+  餐饮: "🍜", 交通: "🚌", 购物: "🛍️", 娱乐: "🎮", 医疗: "💊",
+  居家: "🏠", 教育: "📚", 工资: "💼", 奖金: "🎁", 兼职: "💻",
+  理财: "📈", 其他: "📌",
+};
+
 export default function Home({ user }: Props) {
   // ---- 表单状态 ----
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(today());
+  const [category, setCategory] = useState<TransactionCategory>("餐饮");
   const [saving, setSaving] = useState(false);
 
   // ---- 日期选择器 ----
@@ -88,15 +112,24 @@ export default function Home({ user }: Props) {
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
   const [pickerMonth, setPickerMonth] = useState(new Date().getMonth() + 1);
 
-  // ---- 交易列表 ----
+  // ---- 交易列表（全部，给历史页用） ----
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingList, setLoadingList] = useState(true);
 
-  // ---- 统计 ----
-  const totalIncome = transactions
+  // ---- 本月统计 ----
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  const curMonthStr = `${curYear}-${String(curMonth).padStart(2, "0")}`;
+
+  const monthTransactions = transactions.filter((t) =>
+    t.date.startsWith(curMonthStr)
+  );
+
+  const totalIncome = monthTransactions
     .filter((t) => t.type === "income")
     .reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions
+  const totalExpense = monthTransactions
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
   const balance = totalIncome - totalExpense;
@@ -105,15 +138,15 @@ export default function Home({ user }: Props) {
   useEffect(() => {
     const txRef = query(
       ref(database, `transactions/${user.uid}`),
-      orderByChild("createdAt"),
+      orderByChild("createdAt")
     );
-    const unsubscribe = onValue(
+    onValue(
       txRef,
       (snapshot) => {
         const data = snapshot.val();
         if (data) {
           const list: Transaction[] = Object.entries(data).map(
-            ([id, val]: any) => ({ id, ...val }),
+            ([id, val]: any) => ({ id, ...val })
           );
           list.sort((a, b) => b.createdAt - a.createdAt);
           setTransactions(list);
@@ -123,13 +156,17 @@ export default function Home({ user }: Props) {
         setLoadingList(false);
       },
       (error) => {
-        // 数据库规则拒绝或 URL 错误时触发
         showAlert("读取失败", `数据库错误：${error.message}`);
         setLoadingList(false);
-      },
+      }
     );
     return () => off(txRef);
   }, [user.uid]);
+
+  // 当切换收支类型时重置分类
+  useEffect(() => {
+    setCategory(type === "expense" ? "餐饮" : "工资");
+  }, [type]);
 
   // ---- 提交记账 ----
   const handleSave = async () => {
@@ -145,6 +182,7 @@ export default function Home({ user }: Props) {
         type,
         note: note.trim(),
         date,
+        category,
         createdAt: Date.now(),
         userId: user.uid,
       });
@@ -154,16 +192,16 @@ export default function Home({ user }: Props) {
     } catch (e: any) {
       showAlert(
         "保存失败",
-        `错误：${e?.code || e?.message || "请检查网络和数据库规则"}`,
+        `错误：${e?.code || e?.message || "请检查网络和数据库规则"}`
       );
     } finally {
       setSaving(false);
     }
   };
 
-  // ---- 删除记录 ----
+  // ---- 删除记录（修复：使用 showAlert 兼容 web） ----
   const handleDelete = (id: string) => {
-    Alert.alert("删除", "确定删除该记录？", [
+    showAlert("删除", "确定删除该记录？", [
       { text: "取消", style: "cancel" },
       {
         text: "删除",
@@ -180,9 +218,6 @@ export default function Home({ user }: Props) {
   };
 
   // ---- 日期选择器逻辑 ----
-  const getDaysInMonth = (year: number, month: number) =>
-    new Date(year, month, 0).getDate();
-
   const confirmDate = (day: number) => {
     const mm = String(pickerMonth).padStart(2, "0");
     const dd = String(day).padStart(2, "0");
@@ -197,6 +232,9 @@ export default function Home({ user }: Props) {
     setDatePickerVisible(true);
   };
 
+  const currentCategories =
+    type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+
   // 渲染交易列表项
   const renderItem = useCallback(
     ({ item }: { item: Transaction }) => (
@@ -206,18 +244,34 @@ export default function Home({ user }: Props) {
         activeOpacity={0.7}
       >
         <View style={styles.txLeft}>
-          <View
-            style={[
-              styles.txDot,
-              {
-                backgroundColor: item.type === "income" ? "#4CAF50" : "#F44336",
-              },
-            ]}
-          />
-          <View style={styles.txInfo}>
-            <Text style={styles.txNote} numberOfLines={1}>
-              {item.note || (item.type === "income" ? "收入" : "支出")}
+          <View style={styles.txIconBg}>
+            <Text style={styles.txIcon}>
+              {CATEGORY_ICONS[item.category || "其他"] || "📌"}
             </Text>
+          </View>
+          <View style={styles.txInfo}>
+            <View style={styles.txTopRow}>
+              <Text style={styles.txNote} numberOfLines={1}>
+                {item.note || item.category || (item.type === "income" ? "收入" : "支出")}
+              </Text>
+              {item.category && (
+                <View
+                  style={[
+                    styles.txCategoryTag,
+                    { backgroundColor: item.type === "income" ? "#E8F5E9" : "#FFF3E0" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.txCategoryTagText,
+                      { color: item.type === "income" ? "#4CAF50" : "#FF9800" },
+                    ]}
+                  >
+                    {item.category}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.txDate}>{formatDate(item.date)}</Text>
           </View>
         </View>
@@ -231,22 +285,42 @@ export default function Home({ user }: Props) {
         </Text>
       </TouchableOpacity>
     ),
-    [],
+    [transactions]
   );
+
+  // 本月只显示本月记录，并按日期分组
+  const groupedMonthTx = (() => {
+    const groups: { date: string; items: Transaction[] }[] = [];
+    const map = new Map<string, Transaction[]>();
+    monthTransactions.forEach((t) => {
+      if (!map.has(t.date)) map.set(t.date, []);
+      map.get(t.date)!.push(t);
+    });
+    const sortedDates = Array.from(map.keys()).sort((a, b) =>
+      b.localeCompare(a)
+    );
+    sortedDates.forEach((d) => groups.push({ date: d, items: map.get(d)! }));
+    return groups;
+  })();
 
   return (
     <View style={styles.container}>
       {/* ===== 顶部统计栏 ===== */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>我的账本</Text>
+          <View>
+            <Text style={styles.headerTitle}>我的账本</Text>
+            <Text style={styles.headerSub}>
+              {curYear}年{curMonth}月
+            </Text>
+          </View>
           <TouchableOpacity onPress={() => logout()} style={styles.logoutBtn}>
             <Text style={styles.logoutText}>退出</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.balanceRow}>
-          <Text style={styles.balanceLabel}>结余</Text>
+          <Text style={styles.balanceLabel}>本月结余</Text>
           <Text
             style={[
               styles.balanceAmount,
@@ -259,12 +333,12 @@ export default function Home({ user }: Props) {
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>收入</Text>
+            <Text style={styles.statLabel}>本月收入</Text>
             <Text style={styles.statIncome}>¥{formatAmount(totalIncome)}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>支出</Text>
+            <Text style={styles.statLabel}>本月支出</Text>
             <Text style={styles.statExpense}>
               ¥{formatAmount(totalExpense)}
             </Text>
@@ -281,10 +355,7 @@ export default function Home({ user }: Props) {
           {/* 收支切换 */}
           <View style={styles.typeSwitch}>
             <TouchableOpacity
-              style={[
-                styles.typeBtn,
-                type === "expense" && styles.typeBtnActive,
-              ]}
+              style={[styles.typeBtn, type === "expense" && styles.typeBtnActive]}
               onPress={() => setType("expense")}
             >
               <Text
@@ -327,6 +398,41 @@ export default function Home({ user }: Props) {
             />
           </View>
 
+          {/* 分类选择 */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {currentCategories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryChip,
+                  category === cat && (
+                    type === "expense"
+                      ? styles.categoryChipActiveExpense
+                      : styles.categoryChipActiveIncome
+                  ),
+                ]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text style={styles.categoryChipIcon}>
+                  {CATEGORY_ICONS[cat]}
+                </Text>
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    category === cat && styles.categoryChipTextActive,
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
           {/* 日期 + 备注 */}
           <View style={styles.rowInputs}>
             <TouchableOpacity style={styles.dateBtn} onPress={openDatePicker}>
@@ -360,24 +466,56 @@ export default function Home({ user }: Props) {
         </View>
       </KeyboardAvoidingView>
 
-      {/* ===== 交易列表 ===== */}
+      {/* ===== 本月交易列表 ===== */}
       <View style={styles.listSection}>
-        <Text style={styles.listTitle}>交易记录</Text>
+        <View style={styles.listTitleRow}>
+          <Text style={styles.listTitle}>本月记录</Text>
+          <Text style={styles.listHint}>长按删除</Text>
+        </View>
         {loadingList ? (
           <ActivityIndicator style={{ marginTop: 24 }} color="#1A1A1A" />
-        ) : transactions.length === 0 ? (
+        ) : groupedMonthTx.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>暂无记录</Text>
+            <Text style={styles.emptyText}>本月暂无记录</Text>
             <Text style={styles.emptySubText}>添加第一笔记账吧</Text>
           </View>
         ) : (
           <FlatList
-            data={transactions}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
+            data={groupedMonthTx}
+            keyExtractor={(item) => item.date}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 24 }}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            renderItem={({ item: group }) => (
+              <View>
+                <View style={styles.dateGroupHeader}>
+                  <Text style={styles.dateGroupText}>
+                    {formatDate(group.date)}
+                  </Text>
+                  <Text style={styles.dateGroupAmount}>
+                    {(() => {
+                      const inc = group.items
+                        .filter((t) => t.type === "income")
+                        .reduce((s, t) => s + t.amount, 0);
+                      const exp = group.items
+                        .filter((t) => t.type === "expense")
+                        .reduce((s, t) => s + t.amount, 0);
+                      const parts = [];
+                      if (inc > 0) parts.push(`+¥${formatAmount(inc)}`);
+                      if (exp > 0) parts.push(`-¥${formatAmount(exp)}`);
+                      return parts.join("  ");
+                    })()}
+                  </Text>
+                </View>
+                {group.items.map((item, idx) => (
+                  <View key={item.id}>
+                    {renderItem({ item })}
+                    {idx < group.items.length - 1 && (
+                      <View style={styles.separator} />
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
           />
         )}
       </View>
@@ -486,7 +624,6 @@ function CalendarGrid({
   for (let i = 0; i < cells.length; i += 7) {
     rows.push(cells.slice(i, i + 7));
   }
-  // 补齐最后一行
   const last = rows[rows.length - 1];
   while (last.length < 7) last.push(null);
 
@@ -496,7 +633,10 @@ function CalendarGrid({
         <View key={ri} style={styles.calRow}>
           {row.map((day, ci) => {
             const isSelected =
-              day !== null && selY === year && selM === month && selD === day;
+              day !== null &&
+              selY === year &&
+              selM === month &&
+              selD === day;
             const isToday =
               day !== null &&
               todayD.getFullYear() === year &&
@@ -549,7 +689,7 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 20,
   },
   headerTitle: {
@@ -557,6 +697,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
     letterSpacing: 2,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: 2,
+    letterSpacing: 1,
   },
   logoutBtn: {
     paddingHorizontal: 12,
@@ -683,6 +829,46 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
+  // 分类选择
+  categoryScroll: {
+    marginHorizontal: -4,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  categoryChipActiveExpense: {
+    backgroundColor: "#1A1A1A",
+    borderColor: "#1A1A1A",
+  },
+  categoryChipActiveIncome: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
+  },
+  categoryChipIcon: {
+    fontSize: 13,
+  },
+  categoryChipText: {
+    fontSize: 12,
+    color: "#888",
+    fontWeight: "500",
+  },
+  categoryChipTextActive: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
   // 日期 + 备注行
   rowInputs: {
     flexDirection: "row",
@@ -738,20 +924,50 @@ const styles = StyleSheet.create({
   listSection: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 16,
+  },
+  listTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
   listTitle: {
     fontSize: 12,
     color: "#BBB",
     letterSpacing: 2,
     fontWeight: "500",
-    marginBottom: 12,
   },
+  listHint: {
+    fontSize: 11,
+    color: "#DDD",
+  },
+
+  // 日期分组
+  dateGroupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  dateGroupText: {
+    fontSize: 12,
+    color: "#999",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  dateGroupAmount: {
+    fontSize: 11,
+    color: "#BBB",
+  },
+
   txItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 4,
   },
   txLeft: {
@@ -759,19 +975,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  txDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  txIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
+  },
+  txIcon: {
+    fontSize: 18,
   },
   txInfo: {
     flex: 1,
+  },
+  txTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   txNote: {
     fontSize: 14,
     fontWeight: "500",
     color: "#1A1A1A",
+    flexShrink: 1,
+  },
+  txCategoryTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  txCategoryTagText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   txDate: {
     fontSize: 12,
@@ -786,7 +1023,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: "#F0F0F0",
-    marginLeft: 20,
+    marginLeft: 48,
   },
   emptyState: {
     alignItems: "center",
