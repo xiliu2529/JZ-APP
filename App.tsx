@@ -1,6 +1,5 @@
-import "react-native-gesture-handler";
 import React, { useState, useEffect } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { User } from "firebase/auth";
@@ -15,15 +14,27 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 超时保护：若 Firebase 未正确配置，3 秒后强制结束 loading
-    const timeout = setTimeout(() => setInitializing(false), 3000);
-    const unsubscribe = onAuthChanged((u) => {
-      clearTimeout(timeout);
-      setUser(u);
+    // 超时保护：3 秒后强制结束 loading，避免永久白屏
+    const timeout = setTimeout(() => {
       setInitializing(false);
-    });
+    }, 3000);
+
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onAuthChanged((u) => {
+        clearTimeout(timeout);
+        setUser(u);
+        setInitializing(false);
+      });
+    } catch (e: any) {
+      clearTimeout(timeout);
+      setInitError(e?.message || '初始化失败');
+      setInitializing(false);
+    }
+
     return () => {
       clearTimeout(timeout);
       unsubscribe();
@@ -41,10 +52,8 @@ export default function App() {
   return (
     <NavigationContainer>
       {user ? (
-        // 已登录 → 主界面
         <Home user={user} />
       ) : (
-        // 未登录 → 登录/注册导航
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Register" component={Register} />

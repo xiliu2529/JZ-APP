@@ -32,12 +32,17 @@ export default function Login({ navigation }: Props) {
     try {
       await login(email.trim(), password);
     } catch (e: any) {
+      const code = e?.code || '';
       const msg =
-        e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
+        code === 'auth/invalid-credential' || code === 'auth/wrong-password'
           ? '邮箱或密码错误'
-          : e.code === 'auth/user-not-found'
+          : code === 'auth/user-not-found'
           ? '用户不存在'
-          : '登录失败，请重试';
+          : code === 'auth/network-request-failed'
+          ? '网络连接失败，请检查网络'
+          : code === 'auth/too-many-requests'
+          ? '尝试次数过多，请稍后再试'
+          : `登录失败：${code || e?.message || '未知错误'}`;
       Alert.alert('登录失败', msg);
     } finally {
       setLoading(false);

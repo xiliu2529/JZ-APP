@@ -42,12 +42,17 @@ export default function Register({ navigation }: Props) {
     try {
       await register(email.trim(), password);
     } catch (e: any) {
+      const code = e?.code || '';
       const msg =
-        e.code === 'auth/email-already-in-use'
+        code === 'auth/email-already-in-use'
           ? '该邮箱已被注册'
-          : e.code === 'auth/invalid-email'
+          : code === 'auth/invalid-email'
           ? '邮箱格式不正确'
-          : '注册失败，请重试';
+          : code === 'auth/operation-not-allowed'
+          ? '请先在 Firebase 控制台开启邮箱登录方式'
+          : code === 'auth/network-request-failed'
+          ? '网络连接失败，请检查网络'
+          : `注册失败：${code || e?.message || '未知错误'}`;
       Alert.alert('注册失败', msg);
     } finally {
       setLoading(false);
