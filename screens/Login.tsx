@@ -71,7 +71,7 @@ export default function Login({ navigation }: Props) {
       <View style={styles.inner}>
         <View style={styles.logoArea}>
           <Text style={styles.logoSymbol}>¥</Text>
-          <Text style={styles.appName}>记账</Text>
+          <Text style={styles.appName}>账记</Text>
           <Text style={styles.tagline}>简单 · 清晰 · 高效</Text>
         </View>
 

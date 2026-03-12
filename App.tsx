@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -42,12 +48,8 @@ function MainTabs({ user }: { user: User }) {
         ),
       })}
     >
-      <Tab.Screen name="记账">
-        {() => <Home user={user} />}
-      </Tab.Screen>
-      <Tab.Screen name="历史">
-        {() => <History user={user} />}
-      </Tab.Screen>
+      <Tab.Screen name="账记">{() => <Home user={user} />}</Tab.Screen>
+      <Tab.Screen name="历史">{() => <History user={user} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }
