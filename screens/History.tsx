@@ -6,13 +6,12 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  FlatList,
 } from "react-native";
-import { ref, query, orderByChild, onValue, off, remove } from "firebase/database";
+import { ref, query, orderByChild, onValue, off } from "firebase/database";
 import { database } from "../firebase";
 import { User } from "firebase/auth";
 import { Transaction } from "../types";
-import { showAlert } from "./Home";
+import EditModal from "../components/EditModal";
 
 interface Props {
   user: User;
@@ -50,103 +49,6 @@ const formatDate = (dateStr: string) => {
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 };
-
-// ---- 简易饼图（纯 RN View 实现） ----
-function PieChart({
-  data,
-}: {
-  data: { label: string; value: number; color: string }[];
-}) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return null;
-
-  const SIZE = 160;
-  const CENTER = SIZE / 2;
-  const RADIUS = SIZE / 2 - 4;
-
-  // 计算每个扇形的起止角度
-  let cumulative = 0;
-  const slices = data.map((d) => {
-    const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
-    cumulative += d.value;
-    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
-    return { ...d, startAngle, endAngle };
-  });
-
-  return (
-    <View style={pieStyles.container}>
-      {/* SVG-like pie using overlapping Views with border tricks */}
-      <View style={[pieStyles.pieWrapper, { width: SIZE, height: SIZE }]}>
-        {slices.map((slice, idx) => {
-          const pct = slice.value / total;
-          // 用半圆法绘制：每个扇形 = 两个半圆叠加（Conic gradient trick for RN）
-          // 由于 RN 不支持 SVG，用旋转 border 方法模拟
-          if (pct <= 0) return null;
-
-          // 简化方案：用多个小色块堆叠近似扇形
-          const deg = pct * 360;
-          return (
-            <View
-              key={idx}
-              style={[
-                pieStyles.slice,
-                {
-                  width: SIZE,
-                  height: SIZE,
-                  transform: [
-                    {
-                      rotate: `${slices
-                        .slice(0, idx)
-                        .reduce((s, sl) => s + (sl.value / total) * 360, 0)}deg`,
-                    },
-                  ],
-                },
-              ]}
-            >
-              {/* 半圆方法：旋转 clip */}
-              <View
-                style={[
-                  pieStyles.halfCircle,
-                  {
-                    backgroundColor: slice.color,
-                    transform: [{ rotate: `${Math.min(deg, 180)}deg` }],
-                    borderRadius: RADIUS,
-                    width: RADIUS,
-                    height: RADIUS * 2,
-                  },
-                ]}
-              />
-              {deg > 180 && (
-                <View
-                  style={[
-                    pieStyles.halfCircle2,
-                    {
-                      backgroundColor: slice.color,
-                      borderRadius: RADIUS,
-                      width: RADIUS,
-                      height: RADIUS * 2,
-                      transform: [{ rotate: `${deg - 180}deg` }],
-                    },
-                  ]}
-                />
-              )}
-            </View>
-          );
-        })}
-        {/* 中心白圆 — 变成甜甜圈 */}
-        <View
-          style={[
-            pieStyles.center,
-            { width: SIZE * 0.48, height: SIZE * 0.48, borderRadius: SIZE * 0.24 },
-          ]}
-        >
-          <Text style={pieStyles.centerLabel}>总支出</Text>
-          <Text style={pieStyles.centerAmount}>¥{formatAmount(total)}</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
 
 // ---- 条形饼图（实用版，用宽度比例） ----
 function BarPieChart({
@@ -223,13 +125,16 @@ export default function History({ user }: Props) {
   // tab：支出 | 收入
   const [tab, setTab] = useState<"expense" | "income">("expense");
 
+  // 编辑弹窗
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+
   // 订阅 Firebase
   useEffect(() => {
     const txRef = query(
       ref(database, `transactions/${user.uid}`),
       orderByChild("createdAt")
     );
-    const unsub = onValue(
+    onValue(
       txRef,
       (snap) => {
         const data = snap.val();
@@ -319,24 +224,6 @@ export default function History({ user }: Props) {
       });
     }
   }, [tabData, viewMode]);
-
-  // 删除记录
-  const handleDelete = (id: string) => {
-    showAlert("删除", "确定删除该记录？", [
-      { text: "取消", style: "cancel" },
-      {
-        text: "删除",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await remove(ref(database, `transactions/${user.uid}/${id}`));
-          } catch {
-            showAlert("失败", "删除失败，请重试");
-          }
-        },
-      },
-    ]);
-  };
 
   // 导航
   const goPrev = () => {
@@ -520,7 +407,7 @@ export default function History({ user }: Props) {
                       <View key={item.id}>
                         <TouchableOpacity
                           style={styles.txItem}
-                          onLongPress={() => handleDelete(item.id)}
+                          onPress={() => setEditingTx(item)}
                           activeOpacity={0.7}
                         >
                           <View style={styles.txLeft}>
@@ -596,6 +483,14 @@ export default function History({ user }: Props) {
           )}
         </ScrollView>
       )}
+
+      {/* 编辑 Modal */}
+      <EditModal
+        visible={editingTx !== null}
+        transaction={editingTx}
+        userId={user.uid}
+        onClose={() => setEditingTx(null)}
+      />
     </View>
   );
 }
@@ -901,7 +796,7 @@ const barStyles = StyleSheet.create({
     minWidth: 40,
     textAlign: "right",
   },
-  legendAmount: {
+    legendAmount: {
     fontSize: 13,
     fontWeight: "600",
     color: "#1A1A1A",
@@ -910,55 +805,3 @@ const barStyles = StyleSheet.create({
   },
 });
 
-const pieStyles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  pieWrapper: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  slice: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    overflow: "hidden",
-    alignItems: "flex-end",
-  },
-  halfCircle: {
-    position: "absolute",
-    top: 0,
-    left: "50%",
-    transformOrigin: "left center",
-  },
-  halfCircle2: {
-    position: "absolute",
-    top: 0,
-    left: "50%",
-    transformOrigin: "left center",
-    transform: [{ rotate: "180deg" }],
-  },
-  center: {
-    position: "absolute",
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  centerLabel: {
-    fontSize: 10,
-    color: "#BBB",
-    letterSpacing: 1,
-  },
-  centerAmount: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginTop: 2,
-  },
-});

@@ -18,7 +18,6 @@ import {
   push,
   onValue,
   off,
-  remove,
   query,
   orderByChild,
 } from "firebase/database";
@@ -32,6 +31,7 @@ import {
   IncomeCategory,
 } from "../types";
 import { User } from "firebase/auth";
+import EditModal from "../components/EditModal";
 
 interface Props {
   user: User;
@@ -106,6 +106,9 @@ export default function Home({ user }: Props) {
   const [date, setDate] = useState(today());
   const [category, setCategory] = useState<TransactionCategory>("餐饮");
   const [saving, setSaving] = useState(false);
+
+  // ---- 编辑弹窗 ----
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
   // ---- 日期选择器 ----
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -199,24 +202,6 @@ export default function Home({ user }: Props) {
     }
   };
 
-  // ---- 删除记录（修复：使用 showAlert 兼容 web） ----
-  const handleDelete = (id: string) => {
-    showAlert("删除", "确定删除该记录？", [
-      { text: "取消", style: "cancel" },
-      {
-        text: "删除",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await remove(ref(database, `transactions/${user.uid}/${id}`));
-          } catch {
-            showAlert("失败", "删除失败，请重试");
-          }
-        },
-      },
-    ]);
-  };
-
   // ---- 日期选择器逻辑 ----
   const confirmDate = (day: number) => {
     const mm = String(pickerMonth).padStart(2, "0");
@@ -240,7 +225,7 @@ export default function Home({ user }: Props) {
     ({ item }: { item: Transaction }) => (
       <TouchableOpacity
         style={styles.txItem}
-        onLongPress={() => handleDelete(item.id)}
+        onPress={() => setEditingTx(item)}
         activeOpacity={0.7}
       >
         <View style={styles.txLeft}>
@@ -470,7 +455,7 @@ export default function Home({ user }: Props) {
       <View style={styles.listSection}>
         <View style={styles.listTitleRow}>
           <Text style={styles.listTitle}>本月记录</Text>
-          <Text style={styles.listHint}>长按删除</Text>
+          <Text style={styles.listHint}>点击编辑/删除</Text>
         </View>
         {loadingList ? (
           <ActivityIndicator style={{ marginTop: 24 }} color="#1A1A1A" />
@@ -520,8 +505,15 @@ export default function Home({ user }: Props) {
         )}
       </View>
 
-      {/* ===== 日期选择器 Modal ===== */}
-      <Modal
+      {/* ===== 编辑 Modal ===== */}
+      <EditModal
+        visible={editingTx !== null}
+        transaction={editingTx}
+        userId={user.uid}
+        onClose={() => setEditingTx(null)}
+      />
+
+      {/* ===== 日期选择器 Modal ===== */}      <Modal
         visible={datePickerVisible}
         transparent
         animationType="slide"
