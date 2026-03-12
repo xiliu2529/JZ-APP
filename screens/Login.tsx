@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,41 +9,55 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { login } from '../authService';
-import { RootStackParamList } from '../types';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { login } from "../authService";
+import { RootStackParamList } from "../types";
 
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, "Login">;
 };
 
 export default function Login({ navigation }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 统一提示方法（兼容 Web）
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('提示', '请输入邮箱和密码');
+      showAlert("提示", "请输入邮箱和密码");
       return;
     }
+
     setLoading(true);
+
     try {
       await login(email.trim(), password);
+      showAlert("成功", "登录成功");
     } catch (e: any) {
-      const code = e?.code || '';
+      const code = e?.code || "";
+
       const msg =
-        code === 'auth/invalid-credential' || code === 'auth/wrong-password'
-          ? '邮箱或密码错误'
-          : code === 'auth/user-not-found'
-          ? '用户不存在'
-          : code === 'auth/network-request-failed'
-          ? '网络连接失败，请检查网络'
-          : code === 'auth/too-many-requests'
-          ? '尝试次数过多，请稍后再试'
-          : `登录失败：${code || e?.message || '未知错误'}`;
-      Alert.alert('登录失败', msg);
+        code === "auth/invalid-credential" || code === "auth/wrong-password"
+          ? "邮箱或密码错误"
+          : code === "auth/user-not-found"
+            ? "用户不存在"
+            : code === "auth/network-request-failed"
+              ? "网络连接失败，请检查网络"
+              : code === "auth/too-many-requests"
+                ? "尝试次数过多，请稍后再试"
+                : `登录失败：${code || e?.message || "未知错误"}`;
+
+      showAlert("登录失败", msg);
     } finally {
       setLoading(false);
     }
@@ -52,17 +66,15 @@ export default function Login({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        {/* Logo 区域 */}
         <View style={styles.logoArea}>
           <Text style={styles.logoSymbol}>¥</Text>
           <Text style={styles.appName}>记账</Text>
           <Text style={styles.tagline}>简单 · 清晰 · 高效</Text>
         </View>
 
-        {/* 表单 */}
         <View style={styles.form}>
           <View style={styles.inputWrapper}>
             <Text style={styles.label}>邮箱</Text>
@@ -105,7 +117,7 @@ export default function Login({ navigation }: Props) {
 
           <TouchableOpacity
             style={styles.linkBtn}
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => navigation.navigate("Register")}
           >
             <Text style={styles.linkText}>
               还没有账户？<Text style={styles.linkHighlight}>立即注册</Text>
@@ -120,33 +132,33 @@ export default function Login({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: "#F7F7F7",
   },
   inner: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 32,
   },
   logoArea: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 48,
   },
   logoSymbol: {
     fontSize: 48,
-    fontWeight: '200',
-    color: '#1A1A1A',
+    fontWeight: "200",
+    color: "#1A1A1A",
     letterSpacing: -2,
   },
   appName: {
     fontSize: 28,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: "600",
+    color: "#1A1A1A",
     letterSpacing: 4,
     marginTop: 4,
   },
   tagline: {
     fontSize: 13,
-    color: '#999',
+    color: "#999",
     marginTop: 8,
     letterSpacing: 2,
   },
@@ -158,46 +170,46 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#888',
+    color: "#888",
     letterSpacing: 1,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1A1A1A',
+    color: "#1A1A1A",
     borderWidth: 1,
-    borderColor: '#EBEBEB',
+    borderColor: "#EBEBEB",
   },
   btn: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: "#1A1A1A",
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
   btnDisabled: {
     opacity: 0.5,
   },
   btnText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 3,
   },
   linkBtn: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
   },
   linkText: {
     fontSize: 13,
-    color: '#999',
+    color: "#999",
   },
   linkHighlight: {
-    color: '#1A1A1A',
-    fontWeight: '600',
+    color: "#1A1A1A",
+    fontWeight: "600",
   },
 });

@@ -30,6 +30,11 @@ import { User } from "firebase/auth";
 interface Props {
   user: User;
 }
+type AlertButton = {
+  text: string;
+  style?: "default" | "cancel" | "destructive";
+  onPress?: () => void;
+};
 
 // 获取当天日期 YYYY-MM-DD
 const today = () => new Date().toISOString().split("T")[0];
@@ -40,6 +45,27 @@ const formatDate = (dateStr: string) => {
   const m = d.getMonth() + 1;
   const day = d.getDate();
   return `${m}月${day}日`;
+};
+
+export const showAlert = (
+  title: string,
+  message: string,
+  buttons?: AlertButton[],
+) => {
+  if (Platform.OS === "web") {
+    if (buttons && buttons.length > 1) {
+      const ok = window.confirm(`${title}\n${message}`);
+      if (ok) {
+        buttons[1]?.onPress?.();
+      } else {
+        buttons[0]?.onPress?.();
+      }
+    } else {
+      alert(`${title}\n${message}`);
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
 };
 
 // 格式化金额
@@ -98,7 +124,7 @@ export default function Home({ user }: Props) {
       },
       (error) => {
         // 数据库规则拒绝或 URL 错误时触发
-        Alert.alert('读取失败', `数据库错误：${error.message}`);
+        showAlert("读取失败", `数据库错误：${error.message}`);
         setLoadingList(false);
       },
     );
@@ -109,7 +135,7 @@ export default function Home({ user }: Props) {
   const handleSave = async () => {
     const num = parseFloat(amount);
     if (!amount.trim() || isNaN(num) || num <= 0) {
-      Alert.alert("提示", "请输入有效金额");
+      showAlert("提示", "请输入有效金额");
       return;
     }
     setSaving(true);
@@ -126,7 +152,10 @@ export default function Home({ user }: Props) {
       setNote("");
       setDate(today());
     } catch (e: any) {
-      Alert.alert('保存失败', `错误：${e?.code || e?.message || '请检查网络和数据库规则'}`);
+      showAlert(
+        "保存失败",
+        `错误：${e?.code || e?.message || "请检查网络和数据库规则"}`,
+      );
     } finally {
       setSaving(false);
     }
@@ -143,7 +172,7 @@ export default function Home({ user }: Props) {
           try {
             await remove(ref(database, `transactions/${user.uid}/${id}`));
           } catch {
-            Alert.alert("失败", "删除失败，请重试");
+            showAlert("失败", "删除失败，请重试");
           }
         },
       },
