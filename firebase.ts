@@ -1,5 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { getReactNativePersistence } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
