@@ -81,23 +81,27 @@ export default function Home({ user }: Props) {
       ref(database, `transactions/${user.uid}`),
       orderByChild("createdAt"),
     );
-    const unsubscribe = onValue(txRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list: Transaction[] = Object.entries(data).map(
-          ([id, val]: any) => ({
-            id,
-            ...val,
-          }),
-        );
-        // 按时间倒序
-        list.sort((a, b) => b.createdAt - a.createdAt);
-        setTransactions(list);
-      } else {
-        setTransactions([]);
-      }
-      setLoadingList(false);
-    });
+    const unsubscribe = onValue(
+      txRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const list: Transaction[] = Object.entries(data).map(
+            ([id, val]: any) => ({ id, ...val }),
+          );
+          list.sort((a, b) => b.createdAt - a.createdAt);
+          setTransactions(list);
+        } else {
+          setTransactions([]);
+        }
+        setLoadingList(false);
+      },
+      (error) => {
+        // 数据库规则拒绝或 URL 错误时触发
+        Alert.alert('读取失败', `数据库错误：${error.message}`);
+        setLoadingList(false);
+      },
+    );
     return () => off(txRef);
   }, [user.uid]);
 
@@ -121,8 +125,8 @@ export default function Home({ user }: Props) {
       setAmount("");
       setNote("");
       setDate(today());
-    } catch {
-      Alert.alert("失败", "记录保存失败，请检查网络");
+    } catch (e: any) {
+      Alert.alert('保存失败', `错误：${e?.code || e?.message || '请检查网络和数据库规则'}`);
     } finally {
       setSaving(false);
     }

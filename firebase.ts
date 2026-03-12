@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const firebaseConfig = {
   apiKey: "AIzaSyA-AGz8yMIyEim-25rsVRr3fzNn8qJGHUw",
   authDomain: "jz-app-15152.firebaseapp.com",
-  databaseURL: "https://jz-app-15152-default-rtdb.firebaseio.com",
+  databaseURL: "https://jz-app-15152-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "jz-app-15152",
   storageBucket: "jz-app-15152.firebasestorage.app",
   messagingSenderId: "131506968513",
@@ -23,5 +23,5 @@ export const auth = Platform.OS === 'web'
       persistence: getReactNativePersistence(AsyncStorage),
     });
 
-export const database = getDatabase(app);
+export const database =getDatabase(app, "https://jz-app-15152-default-rtdb.asia-southeast1.firebasedatabase.app")
 export default app;
