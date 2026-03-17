@@ -57,7 +57,7 @@ const formatDate = (dateStr: string) => {
 export const showAlert = (
   title: string,
   message: string,
-  buttons?: AlertButton[]
+  buttons?: AlertButton[],
 ) => {
   if (Platform.OS === "web") {
     if (buttons && buttons.length > 1) {
@@ -80,22 +80,42 @@ export const showAlert = (
 // 格式化金额
 const formatAmount = (amount: number) =>
   amount.toLocaleString("zh-CN", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
 
 // 分类配置
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  "餐饮", "交通", "购物", "娱乐", "医疗", "居家", "教育", "其他",
+  "餐饮",
+  "交通",
+  "购物",
+  "娱乐",
+  "医疗",
+  "居家",
+  "教育",
+  "其他",
 ];
 const INCOME_CATEGORIES: IncomeCategory[] = [
-  "工资", "奖金", "兼职", "理财", "其他",
+  "工资",
+  "奖金",
+  "兼职",
+  "理财",
+  "其他",
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
-  餐饮: "🍜", 交通: "🚌", 购物: "🛍️", 娱乐: "🎮", 医疗: "💊",
-  居家: "🏠", 教育: "📚", 工资: "💼", 奖金: "🎁", 兼职: "💻",
-  理财: "📈", 其他: "📌",
+  餐饮: "🍜",
+  交通: "🚌",
+  购物: "🛍️",
+  娱乐: "🎮",
+  医疗: "💊",
+  居家: "🏠",
+  教育: "📚",
+  工资: "💼",
+  奖金: "🎁",
+  兼职: "💻",
+  理财: "📈",
+  其他: "📌",
 };
 
 export default function Home({ user }: Props) {
@@ -126,7 +146,7 @@ export default function Home({ user }: Props) {
   const curMonthStr = `${curYear}-${String(curMonth).padStart(2, "0")}`;
 
   const monthTransactions = transactions.filter((t) =>
-    t.date.startsWith(curMonthStr)
+    t.date.startsWith(curMonthStr),
   );
 
   const totalIncome = monthTransactions
@@ -141,7 +161,7 @@ export default function Home({ user }: Props) {
   useEffect(() => {
     const txRef = query(
       ref(database, `transactions/${user.uid}`),
-      orderByChild("createdAt")
+      orderByChild("createdAt"),
     );
     onValue(
       txRef,
@@ -149,7 +169,7 @@ export default function Home({ user }: Props) {
         const data = snapshot.val();
         if (data) {
           const list: Transaction[] = Object.entries(data).map(
-            ([id, val]: any) => ({ id, ...val })
+            ([id, val]: any) => ({ id, ...val }),
           );
           list.sort((a, b) => b.createdAt - a.createdAt);
           setTransactions(list);
@@ -161,7 +181,7 @@ export default function Home({ user }: Props) {
       (error) => {
         showAlert("读取失败", `数据库错误：${error.message}`);
         setLoadingList(false);
-      }
+      },
     );
     return () => off(txRef);
   }, [user.uid]);
@@ -195,7 +215,7 @@ export default function Home({ user }: Props) {
     } catch (e: any) {
       showAlert(
         "保存失败",
-        `错误：${e?.code || e?.message || "请检查网络和数据库规则"}`
+        `错误：${e?.code || e?.message || "请检查网络和数据库规则"}`,
       );
     } finally {
       setSaving(false);
@@ -237,13 +257,18 @@ export default function Home({ user }: Props) {
           <View style={styles.txInfo}>
             <View style={styles.txTopRow}>
               <Text style={styles.txNote} numberOfLines={1}>
-                {item.note || item.category || (item.type === "income" ? "收入" : "支出")}
+                {item.note ||
+                  item.category ||
+                  (item.type === "income" ? "收入" : "支出")}
               </Text>
               {item.category && (
                 <View
                   style={[
                     styles.txCategoryTag,
-                    { backgroundColor: item.type === "income" ? "#E8F5E9" : "#FFF3E0" },
+                    {
+                      backgroundColor:
+                        item.type === "income" ? "#E8F5E9" : "#FFF3E0",
+                    },
                   ]}
                 >
                   <Text
@@ -270,7 +295,7 @@ export default function Home({ user }: Props) {
         </Text>
       </TouchableOpacity>
     ),
-    [transactions]
+    [transactions],
   );
 
   // 本月只显示本月记录，并按日期分组
@@ -282,7 +307,7 @@ export default function Home({ user }: Props) {
       map.get(t.date)!.push(t);
     });
     const sortedDates = Array.from(map.keys()).sort((a, b) =>
-      b.localeCompare(a)
+      b.localeCompare(a),
     );
     sortedDates.forEach((d) => groups.push({ date: d, items: map.get(d)! }));
     return groups;
@@ -330,7 +355,6 @@ export default function Home({ user }: Props) {
           </View>
         </View>
       </View>
-
       {/* ===== 记账表单 ===== */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -340,7 +364,10 @@ export default function Home({ user }: Props) {
           {/* 收支切换 */}
           <View style={styles.typeSwitch}>
             <TouchableOpacity
-              style={[styles.typeBtn, type === "expense" && styles.typeBtnActive]}
+              style={[
+                styles.typeBtn,
+                type === "expense" && styles.typeBtnActive,
+              ]}
               onPress={() => setType("expense")}
             >
               <Text
@@ -395,11 +422,10 @@ export default function Home({ user }: Props) {
                 key={cat}
                 style={[
                   styles.categoryChip,
-                  category === cat && (
-                    type === "expense"
+                  category === cat &&
+                    (type === "expense"
                       ? styles.categoryChipActiveExpense
-                      : styles.categoryChipActiveIncome
-                  ),
+                      : styles.categoryChipActiveIncome),
                 ]}
                 onPress={() => setCategory(cat)}
               >
@@ -450,9 +476,8 @@ export default function Home({ user }: Props) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
       {/* ===== 本月交易列表 ===== */}
-      <View style={styles.listSection}>
+      {/* <View style={styles.listSection}>
         <View style={styles.listTitleRow}>
           <Text style={styles.listTitle}>本月记录</Text>
           <Text style={styles.listHint}>点击编辑/删除</Text>
@@ -503,8 +528,7 @@ export default function Home({ user }: Props) {
             )}
           />
         )}
-      </View>
-
+      </View> */}
       {/* ===== 编辑 Modal ===== */}
       <EditModal
         visible={editingTx !== null}
@@ -512,8 +536,8 @@ export default function Home({ user }: Props) {
         userId={user.uid}
         onClose={() => setEditingTx(null)}
       />
-
-      {/* ===== 日期选择器 Modal ===== */}      <Modal
+      {/* ===== 日期选择器 Modal ===== */}{" "}
+      <Modal
         visible={datePickerVisible}
         transparent
         animationType="slide"
@@ -625,10 +649,7 @@ function CalendarGrid({
         <View key={ri} style={styles.calRow}>
           {row.map((day, ci) => {
             const isSelected =
-              day !== null &&
-              selY === year &&
-              selM === month &&
-              selD === day;
+              day !== null && selY === year && selM === month && selD === day;
             const isToday =
               day !== null &&
               todayD.getFullYear() === year &&

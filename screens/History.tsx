@@ -34,14 +34,23 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
-  餐饮: "🍜", 交通: "🚌", 购物: "🛍️", 娱乐: "🎮", 医疗: "💊",
-  居家: "🏠", 教育: "📚", 工资: "💼", 奖金: "🎁", 兼职: "💻",
-  理财: "📈", 其他: "📌",
+  餐饮: "🍜",
+  交通: "🚌",
+  购物: "🛍️",
+  娱乐: "🎮",
+  医疗: "💊",
+  居家: "🏠",
+  教育: "📚",
+  工资: "💼",
+  奖金: "🎁",
+  兼职: "💻",
+  理财: "📈",
+  其他: "📌",
 };
 
 const formatAmount = (amount: number) =>
   amount.toLocaleString("zh-CN", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
 
@@ -100,7 +109,9 @@ function BarPieChart({
               <Text style={barStyles.legendPct}>
                 {((d.value / total) * 100).toFixed(1)}%
               </Text>
-              <Text style={barStyles.legendAmount}>¥{formatAmount(d.value)}</Text>
+              <Text style={barStyles.legendAmount}>
+                ¥{formatAmount(d.value)}
+              </Text>
             </View>
           </View>
         ))}
@@ -132,7 +143,7 @@ export default function History({ user }: Props) {
   useEffect(() => {
     const txRef = query(
       ref(database, `transactions/${user.uid}`),
-      orderByChild("createdAt")
+      orderByChild("createdAt"),
     );
     onValue(
       txRef,
@@ -140,7 +151,7 @@ export default function History({ user }: Props) {
         const data = snap.val();
         if (data) {
           const list: Transaction[] = Object.entries(data).map(
-            ([id, val]: any) => ({ id, ...val })
+            ([id, val]: any) => ({ id, ...val }),
           );
           list.sort((a, b) => b.createdAt - a.createdAt);
           setTransactions(list);
@@ -149,7 +160,7 @@ export default function History({ user }: Props) {
         }
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
     return () => off(txRef);
   }, [user.uid]);
@@ -167,7 +178,7 @@ export default function History({ user }: Props) {
   // 当前 tab 的数据
   const tabData = useMemo(
     () => filtered.filter((t) => t.type === tab),
-    [filtered, tab]
+    [filtered, tab],
   );
 
   // 统计
@@ -176,14 +187,14 @@ export default function History({ user }: Props) {
       filtered
         .filter((t) => t.type === "income")
         .reduce((s, t) => s + t.amount, 0),
-    [filtered]
+    [filtered],
   );
   const totalExpense = useMemo(
     () =>
       filtered
         .filter((t) => t.type === "expense")
         .reduce((s, t) => s + t.amount, 0),
-    [filtered]
+    [filtered],
   );
 
   // 分类统计（用于饼图）
@@ -209,7 +220,11 @@ export default function History({ user }: Props) {
         map.get(t.date)!.push(t);
       });
       const dates = Array.from(map.keys()).sort((a, b) => b.localeCompare(a));
-      return dates.map((d) => ({ key: d, label: formatDate(d), items: map.get(d)! }));
+      return dates.map((d) => ({
+        key: d,
+        label: formatDate(d),
+        items: map.get(d)!,
+      }));
     } else {
       const map = new Map<string, Transaction[]>();
       tabData.forEach((t) => {
@@ -264,7 +279,10 @@ export default function History({ user }: Props) {
         {/* 月/年切换 */}
         <View style={styles.modeSwitch}>
           <TouchableOpacity
-            style={[styles.modeBtn, viewMode === "month" && styles.modeBtnActive]}
+            style={[
+              styles.modeBtn,
+              viewMode === "month" && styles.modeBtnActive,
+            ]}
             onPress={() => setViewMode("month")}
           >
             <Text
@@ -277,7 +295,10 @@ export default function History({ user }: Props) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.modeBtn, viewMode === "year" && styles.modeBtnActive]}
+            style={[
+              styles.modeBtn,
+              viewMode === "year" && styles.modeBtnActive,
+            ]}
             onPress={() => setViewMode("year")}
           >
             <Text
@@ -306,12 +327,16 @@ export default function History({ user }: Props) {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>收入</Text>
-            <Text style={styles.summaryIncome}>¥{formatAmount(totalIncome)}</Text>
+            <Text style={styles.summaryIncome}>
+              ¥{formatAmount(totalIncome)}
+            </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>支出</Text>
-            <Text style={styles.summaryExpense}>¥{formatAmount(totalExpense)}</Text>
+            <Text style={styles.summaryExpense}>
+              ¥{formatAmount(totalExpense)}
+            </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
@@ -320,8 +345,7 @@ export default function History({ user }: Props) {
               style={[
                 styles.summaryBalance,
                 {
-                  color:
-                    totalIncome - totalExpense >= 0 ? "#fff" : "#FF8A80",
+                  color: totalIncome - totalExpense >= 0 ? "#fff" : "#FF8A80",
                 },
               ]}
             >
@@ -398,7 +422,7 @@ export default function History({ user }: Props) {
                       <Text style={styles.groupTotal}>
                         ¥
                         {formatAmount(
-                          group.items.reduce((s, t) => s + t.amount, 0)
+                          group.items.reduce((s, t) => s + t.amount, 0),
                         )}
                       </Text>
                     </View>
@@ -413,7 +437,8 @@ export default function History({ user }: Props) {
                           <View style={styles.txLeft}>
                             <View style={styles.txIconBg}>
                               <Text style={styles.txIcon}>
-                                {CATEGORY_ICONS[item.category || "其他"] || "📌"}
+                                {CATEGORY_ICONS[item.category || "其他"] ||
+                                  "📌"}
                               </Text>
                             </View>
                             <View style={styles.txInfo}>
@@ -463,7 +488,9 @@ export default function History({ user }: Props) {
                               styles.txAmount,
                               {
                                 color:
-                                  item.type === "income" ? "#4CAF50" : "#1A1A1A",
+                                  item.type === "income"
+                                    ? "#4CAF50"
+                                    : "#1A1A1A",
                               },
                             ]}
                           >
@@ -796,7 +823,7 @@ const barStyles = StyleSheet.create({
     minWidth: 40,
     textAlign: "right",
   },
-    legendAmount: {
+  legendAmount: {
     fontSize: 13,
     fontWeight: "600",
     color: "#1A1A1A",
@@ -804,4 +831,3 @@ const barStyles = StyleSheet.create({
     textAlign: "right",
   },
 });
-
