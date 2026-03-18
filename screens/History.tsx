@@ -34,7 +34,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
-  餐饮: "🍜",
+  餐饮: "🍲",
   交通: "🚌",
   购物: "🛍️",
   娱乐: "🎮",

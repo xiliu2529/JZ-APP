@@ -104,7 +104,7 @@ const INCOME_CATEGORIES: IncomeCategory[] = [
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
-  餐饮: "🍜",
+  餐饮: "🍲",
   交通: "🚌",
   购物: "🛍️",
   娱乐: "🎮",

@@ -27,15 +27,35 @@ import { showAlert } from "../screens/Home";
 
 // ---- 分类配置（与 Home.tsx 保持一致） ----
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  "餐饮", "交通", "购物", "娱乐", "医疗", "居家", "教育", "其他",
+  "餐饮",
+  "交通",
+  "购物",
+  "娱乐",
+  "医疗",
+  "居家",
+  "教育",
+  "其他",
 ];
 export const INCOME_CATEGORIES: IncomeCategory[] = [
-  "工资", "奖金", "兼职", "理财", "其他",
+  "工资",
+  "奖金",
+  "兼职",
+  "理财",
+  "其他",
 ];
 export const CATEGORY_ICONS: Record<string, string> = {
-  餐饮: "🍜", 交通: "🚌", 购物: "🛍️", 娱乐: "🎮", 医疗: "💊",
-  居家: "🏠", 教育: "📚", 工资: "💼", 奖金: "🎁", 兼职: "💻",
-  理财: "📈", 其他: "📌",
+  餐饮: "🍲",
+  交通: "🚌",
+  购物: "🛍️",
+  娱乐: "🎮",
+  医疗: "💊",
+  居家: "🏠",
+  教育: "📚",
+  工资: "💼",
+  奖金: "🎁",
+  兼职: "💻",
+  理财: "📈",
+  其他: "📌",
 };
 
 // 格式化日期
@@ -81,7 +101,8 @@ function CalendarGrid({
       {rows.map((row, ri) => (
         <View key={ri} style={calStyles.row}>
           {row.map((day, ci) => {
-            const isSelected = day !== null && selY === year && selM === month && selD === day;
+            const isSelected =
+              day !== null && selY === year && selM === month && selD === day;
             const isToday =
               day !== null &&
               todayD.getFullYear() === year &&
@@ -118,7 +139,12 @@ function CalendarGrid({
   );
 }
 
-export default function EditModal({ visible, transaction, userId, onClose }: EditModalProps) {
+export default function EditModal({
+  visible,
+  transaction,
+  userId,
+  onClose,
+}: EditModalProps) {
   const [type, setType] = useState<TransactionType>("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<TransactionCategory>("餐饮");
@@ -136,7 +162,10 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
     if (transaction) {
       setType(transaction.type);
       setAmount(String(transaction.amount));
-      setCategory(transaction.category || (transaction.type === "expense" ? "餐饮" : "工资"));
+      setCategory(
+        transaction.category ||
+          (transaction.type === "expense" ? "餐饮" : "工资"),
+      );
       setNote(transaction.note || "");
       setDate(transaction.date);
       const parts = transaction.date.split("-");
@@ -198,7 +227,9 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
         style: "destructive",
         onPress: async () => {
           try {
-            await remove(ref(database, `transactions/${userId}/${transaction.id}`));
+            await remove(
+              ref(database, `transactions/${userId}/${transaction.id}`),
+            );
             onClose();
           } catch {
             showAlert("失败", "删除失败，请重试");
@@ -208,7 +239,8 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
     ]);
   };
 
-  const currentCategories = type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const currentCategories =
+    type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   return (
     <Modal
@@ -218,7 +250,11 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.overlayBg} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity
+          style={styles.overlayBg}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
         <View style={styles.sheet}>
           {/* 标题栏 */}
@@ -240,18 +276,34 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
             {/* 收支切换 */}
             <View style={styles.typeSwitch}>
               <TouchableOpacity
-                style={[styles.typeBtn, type === "expense" && styles.typeBtnExpense]}
+                style={[
+                  styles.typeBtn,
+                  type === "expense" && styles.typeBtnExpense,
+                ]}
                 onPress={() => handleTypeChange("expense")}
               >
-                <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    type === "expense" && styles.typeBtnTextActive,
+                  ]}
+                >
                   支出
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.typeBtn, type === "income" && styles.typeBtnIncome]}
+                style={[
+                  styles.typeBtn,
+                  type === "income" && styles.typeBtnIncome,
+                ]}
                 onPress={() => handleTypeChange("income")}
               >
-                <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    type === "income" && styles.typeBtnTextActive,
+                  ]}
+                >
                   收入
                 </Text>
               </TouchableOpacity>
@@ -283,13 +335,18 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
                   style={[
                     styles.chip,
                     category === cat &&
-                      (type === "expense" ? styles.chipActiveExpense : styles.chipActiveIncome),
+                      (type === "expense"
+                        ? styles.chipActiveExpense
+                        : styles.chipActiveIncome),
                   ]}
                   onPress={() => setCategory(cat)}
                 >
                   <Text style={styles.chipIcon}>{CATEGORY_ICONS[cat]}</Text>
                   <Text
-                    style={[styles.chipText, category === cat && styles.chipTextActive]}
+                    style={[
+                      styles.chipText,
+                      category === cat && styles.chipTextActive,
+                    ]}
                   >
                     {cat}
                   </Text>
@@ -301,7 +358,9 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
             <Text style={styles.sectionLabel}>日期</Text>
             <TouchableOpacity style={styles.dateBtn} onPress={openDatePicker}>
               <Text style={styles.dateIcon}>📅</Text>
-              <Text style={styles.dateBtnText}>{date ? formatDate(date) : "选择日期"}</Text>
+              <Text style={styles.dateBtnText}>
+                {date ? formatDate(date) : "选择日期"}
+              </Text>
               <Text style={styles.dateArrow}>›</Text>
             </TouchableOpacity>
 
@@ -347,17 +406,23 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
               <View style={styles.dpHeader}>
                 <TouchableOpacity
                   onPress={() => {
-                    if (pickerMonth === 1) { setPickerMonth(12); setPickerYear((y) => y - 1); }
-                    else setPickerMonth((m) => m - 1);
+                    if (pickerMonth === 1) {
+                      setPickerMonth(12);
+                      setPickerYear((y) => y - 1);
+                    } else setPickerMonth((m) => m - 1);
                   }}
                 >
                   <Text style={styles.dpArrow}>‹</Text>
                 </TouchableOpacity>
-                <Text style={styles.dpMonthLabel}>{pickerYear}年 {pickerMonth}月</Text>
+                <Text style={styles.dpMonthLabel}>
+                  {pickerYear}年 {pickerMonth}月
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
-                    if (pickerMonth === 12) { setPickerMonth(1); setPickerYear((y) => y + 1); }
-                    else setPickerMonth((m) => m + 1);
+                    if (pickerMonth === 12) {
+                      setPickerMonth(1);
+                      setPickerYear((y) => y + 1);
+                    } else setPickerMonth((m) => m + 1);
                   }}
                 >
                   <Text style={styles.dpArrow}>›</Text>
@@ -365,7 +430,9 @@ export default function EditModal({ visible, transaction, userId, onClose }: Edi
               </View>
               <View style={styles.dpWeekRow}>
                 {["日", "一", "二", "三", "四", "五", "六"].map((d) => (
-                  <Text key={d} style={styles.dpWeekLabel}>{d}</Text>
+                  <Text key={d} style={styles.dpWeekLabel}>
+                    {d}
+                  </Text>
                 ))}
               </View>
               <CalendarGrid
