@@ -473,59 +473,6 @@ export default function Home({ user }: Props) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      {/* ===== 本月交易列表 ===== */}
-      {/* <View style={styles.listSection}>
-        <View style={styles.listTitleRow}>
-          <Text style={styles.listTitle}>本月记录</Text>
-          <Text style={styles.listHint}>点击编辑/删除</Text>
-        </View>
-        {loadingList ? (
-          <ActivityIndicator style={{ marginTop: 24 }} color="#1A1A1A" />
-        ) : groupedMonthTx.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>本月暂无记录</Text>
-            <Text style={styles.emptySubText}>添加第一笔记账吧</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={groupedMonthTx}
-            keyExtractor={(item) => item.date}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            renderItem={({ item: group }) => (
-              <View>
-                <View style={styles.dateGroupHeader}>
-                  <Text style={styles.dateGroupText}>
-                    {formatDate(group.date)}
-                  </Text>
-                  <Text style={styles.dateGroupAmount}>
-                    {(() => {
-                      const inc = group.items
-                        .filter((t) => t.type === "income")
-                        .reduce((s, t) => s + t.amount, 0);
-                      const exp = group.items
-                        .filter((t) => t.type === "expense")
-                        .reduce((s, t) => s + t.amount, 0);
-                      const parts = [];
-                      if (inc > 0) parts.push(`+¥${formatAmount(inc)}`);
-                      if (exp > 0) parts.push(`-¥${formatAmount(exp)}`);
-                      return parts.join("  ");
-                    })()}
-                  </Text>
-                </View>
-                {group.items.map((item, idx) => (
-                  <View key={item.id}>
-                    {renderItem({ item })}
-                    {idx < group.items.length - 1 && (
-                      <View style={styles.separator} />
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-          />
-        )}
-      </View> */}
       {/* ===== 编辑 Modal ===== */}
       <EditModal
         visible={editingTx !== null}
