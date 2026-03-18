@@ -19,18 +19,18 @@ interface Props {
 
 // 分类颜色表
 const CATEGORY_COLORS: Record<string, string> = {
-  餐饮: "#FF6B6B",
-  交通: "#4ECDC4",
-  购物: "#FFD93D",
-  娱乐: "#A29BFE",
-  医疗: "#74B9FF",
-  居家: "#55EFC4",
-  教育: "#FDCB6E",
-  工资: "#00B894",
-  奖金: "#00CEC9",
-  兼职: "#6C5CE7",
-  理财: "#0984E3",
-  其他: "#B2BEC3",
+  餐饮: "#ff0015", // 鲜红色，显眼
+  交通: "#1FA2FF", // 明亮蓝色
+  购物: "#fffa63", // 明亮黄色
+  娱乐: "#852ef0", // 紫色
+  医疗: "#26d0f3", // 青蓝色
+  居家: "#f68935", // 橙色
+  教育: "#f30ed8", // 深紫色
+  工资: "#4cf1de", // 青绿色
+  奖金: "#FFBE0B", // 金黄色
+  兼职: "#F72585", // 鲜粉色
+  理财: "#3A86FF", // 深蓝色
+  其他: "#8D99AE", // 中灰蓝
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
