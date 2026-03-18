@@ -137,7 +137,6 @@ export default function Home({ user }: Props) {
 
   // ---- 交易列表（全部，给历史页用） ----
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
 
   // ---- 本月统计 ----
   const now = new Date();
@@ -176,11 +175,9 @@ export default function Home({ user }: Props) {
         } else {
           setTransactions([]);
         }
-        setLoadingList(false);
       },
       (error) => {
         showAlert("读取失败", `数据库错误：${error.message}`);
-        setLoadingList(false);
       },
     );
     return () => off(txRef);
