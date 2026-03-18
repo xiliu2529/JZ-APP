@@ -35,8 +35,6 @@ export default function Register({ navigation }: Props) {
   };
 
   const handleRegister = async () => {
-    console.log("点击注册", email, password, confirm);
-
     const emailValue = email.trim();
 
     if (!emailValue || !password.trim() || !confirm.trim()) {
@@ -63,8 +61,6 @@ export default function Register({ navigation }: Props) {
 
       navigation.goBack();
     } catch (e: any) {
-      console.log("注册错误", e);
-
       const code = e?.code || "";
 
       const msg =
